@@ -1,44 +1,42 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 import asyncio
+import socket
 import time
-import random
+import os
 
-app = FastAPI()
+TARGET_IP = input("IP: ")
+TARGET_PORT = int(input("PORT: "))
+PLAYERS = int(input("Players: "))
+DURATION = int(input("Duration: "))
 
-# CORS fix (important for frontend)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+sent = 0
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-@app.get("/")
-def home():
-    return {"status": "Backend Running"}
+async def player_sim():
+    global sent
 
-@app.get("/run-test")
-async def run_test(players: int = 10, duration: int = 5):
-    counter = 0
+    end_time = time.time() + DURATION
 
-    async def player_sim():
-        nonlocal counter
-        end_time = time.time() + duration
+    while time.time() < end_time:
+        try:
+            data = os.urandom(64)  # small packet
 
-        while time.time() < end_time:
-            # safe simulation
-            fake = random.randint(1, 100)
-            _ = fake * fake
-            counter += 1
-            await asyncio.sleep(0.05)
+            sock.sendto(data, (TARGET_IP, TARGET_PORT))
+            sent += 1
 
-    tasks = [asyncio.create_task(player_sim()) for _ in range(players)]
+        except:
+            pass
+
+        await asyncio.sleep(0.05)
+
+async def main():
+    print("\n🚀 Running Load Test...\n")
+
+    tasks = [asyncio.create_task(player_sim()) for _ in range(PLAYERS)]
     await asyncio.gather(*tasks)
 
-    return {
-        "players": players,
-        "duration": duration,
-        "operations": counter
-    }
+    print("\n📊 RESULT")
+    print(f"Packets Sent: {sent}")
+
+    sock.close()
+
+asyncio.run(main())
