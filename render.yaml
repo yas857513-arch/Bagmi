@@ -1,10 +1,7 @@
 services:
-  - type: worker
-    name: telegram-load-bot
+  - type: web
+    name: network-tester-api
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python bot.py
-    envVars:
-      - key: 8435736634:AAGLe5AFljrt6l0nveG6nJBGy7jo2ZtbriU
-        sync: false
-        
+    startCommand: uvicorn Main:app --host 0.0.0.0 --port $PORT
+    
